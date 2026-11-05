@@ -1,7 +1,7 @@
 module VBO
   module SkAgent
     PLUGIN_NAME    = 'VBO SkAgent'.freeze
-    PLUGIN_VERSION = '1.2.0'.freeze
+    PLUGIN_VERSION = '1.3.0'.freeze
 
     unless file_loaded?(__FILE__)
       ex = SketchupExtension.new(PLUGIN_NAME, File.join(__dir__, 'vbo_sk_agent/loader'))
@@ -16,6 +16,15 @@ end
 file_loaded(__FILE__)
 
 # Release Notes
+#
+# v1.3.0 (2026-11-05)
+# - NEW: Dashboard language selector with automatic SketchUp locale detection,
+#        persistent English/Simplified Chinese preference, and restart notice for menu labels
+# - NEW: Localized menus, toolbar hints, dashboard content, dynamic status messages,
+#        safety prompts, and AI tool setup guidance
+# - NEW: Simplified Chinese beginner guide; copyable prompts and code examples remain unchanged
+# - FIX: Preserve unsaved MCP port input while the dashboard refreshes or changes language
+# - DOCS: Document dashboard language support and add locale/release validation tests
 #
 # v1.2.0 (2026-04-28)
 # - NEW: MCP HTTP transport — Claude Code / Cursor connect via http://127.0.0.1:7891/mcp

@@ -6,6 +6,7 @@ module VBO
       DEFAULTS = {
         'safety_mode'    => true,
         'poll_interval'  => 0.5,
+        'ui_language'    => 'auto', # 'auto' | 'zh-CN' | 'en'
         # MCP transport (v1.2.0+)
         'transport_mode' => 'auto',  # 'auto' | 'mcp_only' | 'file_only'
         'mcp_port'       => 7891,    # Preferred port; fallback ephemeral nếu chiếm

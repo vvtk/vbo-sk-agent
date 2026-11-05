@@ -2,8 +2,13 @@
 
 var _statusData = null;
 var _refreshTimer = null;
+var _messages = {};
+var _pendingMcpPort = null;
 
 window.onload = function() {
+  if (typeof sketchup !== 'undefined' && sketchup.get_localization) {
+    sketchup.get_localization();
+  }
   sketchup.get_status();
   // Auto-refresh every 2s for history updates
   _refreshTimer = setInterval(function() {
@@ -12,6 +17,85 @@ window.onload = function() {
   // Show first agent's steps
   onAgentSelect();
 };
+
+function tr(key, values) {
+  key = typeof key === 'string' ? key.trim() : key;
+  var result = _messages[key] || key;
+  if (values) {
+    result = result.replace(/%\{(\w+)\}/g, function(token, name) {
+      return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : token;
+    });
+  }
+  return result;
+}
+
+function updateLocalization(payload) {
+  if (!payload || !payload.messages) return;
+  var portInput = document.getElementById('mcp-port-input');
+  var pendingPort = portInput ? portInput.value : null;
+  _messages = {};
+  Object.keys(payload.messages).forEach(function(key) {
+    _messages[key.trim()] = payload.messages[key];
+  });
+  document.documentElement.lang = payload.locale === 'zh-CN' ? 'zh-CN' : 'en';
+
+  var languageSelect = document.getElementById('language-select');
+  if (languageSelect) languageSelect.value = payload.preference || 'auto';
+
+  var textNodes = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  var nodes = [];
+  while (textNodes.nextNode()) nodes.push(textNodes.currentNode);
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var parent = node.parentElement;
+    if (!parent || parent.closest('.agent-steps, .history-list, .setup-prompt, .code-block, code, pre, script, style, #version, #multi-warning-text, [data-i18n-key], [data-i18n-html-key]')) continue;
+    if (typeof node._skAgentEnglish === 'undefined') node._skAgentEnglish = node.nodeValue;
+    var source = node._skAgentEnglish;
+    var match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    node.nodeValue = match[1] + tr(match[2]) + match[3];
+  }
+
+  var titled = document.querySelectorAll('[title], [aria-label]');
+  for (var j = 0; j < titled.length; j++) {
+    var element = titled[j];
+    if (element.hasAttribute('title')) {
+      if (!element.hasAttribute('data-skagent-title')) element.setAttribute('data-skagent-title', element.title);
+      element.title = tr(element.getAttribute('data-skagent-title'));
+    }
+    if (element.hasAttribute('aria-label')) {
+      if (!element.hasAttribute('data-skagent-aria-label')) element.setAttribute('data-skagent-aria-label', element.getAttribute('aria-label'));
+      element.setAttribute('aria-label', tr(element.getAttribute('data-skagent-aria-label')));
+    }
+  }
+
+  var explicitText = document.querySelectorAll('[data-i18n-key], [data-i18n-html-key]');
+  for (var k = 0; k < explicitText.length; k++) {
+    var textElement = explicitText[k];
+    var htmlKey = textElement.getAttribute('data-i18n-html-key');
+    if (htmlKey) {
+      textElement.innerHTML = tr(htmlKey);
+    } else {
+      textElement.textContent = tr(textElement.getAttribute('data-i18n-key'));
+    }
+  }
+
+  var notice = document.getElementById('language-notice');
+  if (notice) {
+    notice.hidden = !payload.menu_restart_required;
+    notice.textContent = payload.menu_restart_required ? tr('language.menu_restart') : '';
+  }
+
+  if (_statusData) updateStatus(_statusData);
+  if (portInput && pendingPort !== null) portInput.value = pendingPort;
+  onAgentSelect();
+}
+
+function onLanguageChange() {
+  var select = document.getElementById('language-select');
+  if (select && typeof sketchup !== 'undefined' && sketchup.set_language) {
+    sketchup.set_language(select.value);
+  }
+}
 
 
 function updateStatus(data) {
@@ -25,10 +109,10 @@ function updateStatus(data) {
   var badge = document.getElementById('status-badge');
   if (badge) {
     if (data.watching) {
-      badge.textContent = 'Connected';
+      badge.textContent = tr('Connected');
       badge.className = 'badge connected';
     } else {
-      badge.textContent = 'Disconnected';
+      badge.textContent = tr('Disconnected');
       badge.className = 'badge disconnected';
     }
   }
@@ -36,7 +120,7 @@ function updateStatus(data) {
   // Toggle button text
   var btnToggle = document.getElementById('btn-toggle');
   if (btnToggle) {
-    btnToggle.textContent = data.watching ? 'Disconnect' : 'Connect';
+    btnToggle.textContent = tr(data.watching ? 'Disconnect' : 'Connect');
   }
 
   // Paths
@@ -73,26 +157,26 @@ function renderMcp(data) {
 
   if (mcpBadge) {
     if (!mcp.available) {
-      mcpBadge.textContent = 'Unavailable';
+      mcpBadge.textContent = tr('Unavailable');
       mcpBadge.className = 'badge disconnected';
     } else if (mcp.running) {
-      mcpBadge.textContent = mcp.using_preferred ? 'Running' : 'Running (fallback)';
+      mcpBadge.textContent = mcp.using_preferred ? tr('Running') : tr('Running (fallback)');
       mcpBadge.className = mcp.using_preferred ? 'badge connected' : 'badge warning';
     } else {
-      mcpBadge.textContent = 'Stopped';
+      mcpBadge.textContent = tr('Stopped');
       mcpBadge.className = 'badge disconnected';
     }
   }
   if (mcpPortLabel) {
     if (mcp.running && mcp.port) {
-      mcpPortLabel.textContent = 'port ' + mcp.port;
+      mcpPortLabel.textContent = tr('port %{port}', { port: mcp.port });
       mcpPortLabel.style.display = 'inline-block';
     } else {
       mcpPortLabel.style.display = 'none';
     }
   }
   if (btnMcp) {
-    btnMcp.textContent = mcp.running ? 'Stop' : 'Start';
+    btnMcp.textContent = tr(mcp.running ? 'Stop' : 'Start');
     btnMcp.disabled = !mcp.available;
   }
 
@@ -105,9 +189,13 @@ function renderMcp(data) {
       warn.style.display = 'block';
       var others = (instances.others || []).length;
       var port = mcp.port || mcp.preferred_port || 7891;
-      var msg = 'Có ' + instances.total + ' SketchUp instance đang chạy SkAgent. ' +
-                'Instance này dùng port ' + port + (mcp.using_preferred ? ' (preferred)' : ' (fallback ephemeral)') + '. ' +
-                (others > 0 ? others + ' instance khác có thể chiếm port preferred 7891.' : '');
+      var msg = tr('warning.instances', {
+        total: instances.total,
+        port: port,
+        port_type: mcp.using_preferred ? tr('preferred') : tr('fallback ephemeral'),
+        others: others,
+        other_warning: others > 0 ? tr('warning.other_instances', { count: others }) : ''
+      });
       warnText.textContent = msg;
       if (cmdMulti) cmdMulti.textContent = 'claude mcp add --transport http vbo-sketchup http://127.0.0.1:' + port + '/mcp';
     } else {
@@ -121,8 +209,12 @@ function renderMcp(data) {
 
   // Port input
   var portInput = document.getElementById('mcp-port-input');
-  if (portInput && document.activeElement !== portInput) {
-    portInput.value = mcp.preferred_port || 7891;
+  if (portInput) {
+    var configuredPort = String(mcp.preferred_port || 7891);
+    if (_pendingMcpPort === configuredPort) _pendingMcpPort = null;
+    if (_pendingMcpPort === null && document.activeElement !== portInput) {
+      portInput.value = configuredPort;
+    }
   }
 
   // IDE setup commands — substitute current port
@@ -155,12 +247,17 @@ function onMcpPortApply() {
   if (!input) return;
   var port = parseInt(input.value, 10);
   if (isNaN(port) || port < 1024 || port > 65535) {
-    showToast('Port phải trong khoảng 1024-65535');
+    showToast(tr('toast.port_range'));
     return;
   }
   if (typeof sketchup !== 'undefined' && sketchup.set_mcp_port) {
     sketchup.set_mcp_port(port);
   }
+}
+
+function onMcpPortInput() {
+  var input = document.getElementById('mcp-port-input');
+  if (input) _pendingMcpPort = input.value;
 }
 
 function selectIdeTab(name) {
@@ -179,14 +276,14 @@ function copyIdeCmd(name) {
   var el = document.getElementById('cmd-' + name);
   if (!el) return;
   copyToClipboard(el.textContent);
-  showToast('Copied!');
+  showToast(tr('toast.copied'));
 }
 
 function copyMcpCommand() {
   var el = document.getElementById('mcp-cmd-multi');
   if (!el) return;
   copyToClipboard(el.textContent);
-  showToast('Copied!');
+  showToast(tr('toast.copied'));
 }
 
 function setPath(elementId, path) {
@@ -222,7 +319,7 @@ function copyPath(type) {
 
   if (path) {
     copyToClipboard(path);
-    showToast('Copied!');
+    showToast(tr('toast.copied'));
   }
 }
 
@@ -470,13 +567,13 @@ function onAgentSelect() {
   var stepsEl = document.getElementById('agent-steps');
   var html = '<ol class="steps">';
   for (var i = 0; i < agent.steps.length; i++) {
-    html += '<li>' + agent.steps[i] + '</li>';
+    html += '<li>' + tr(agent.steps[i]) + '</li>';
   }
   html += '</ol>';
 
   // Note
   if (agent.note) {
-    html += '<p class="agent-note">' + agent.note + '</p>';
+    html += '<p class="agent-note">' + tr(agent.note) + '</p>';
   }
 
   stepsEl.innerHTML = html;
@@ -506,7 +603,7 @@ function copySetupPrompt() {
   var el = document.getElementById('agent-prompt-text');
   if (!el) return;
   copyToClipboard(el.textContent);
-  showToast('Prompt copied! Paste it into your AI.');
+  showToast(tr('toast.prompt_copied'));
 }
 
 function toggleSetup(id) {
@@ -521,7 +618,7 @@ function toggleSetup(id) {
 function copyCdCommand() {
   if (!_statusData || !_statusData.plugins_dir) return;
   copyToClipboard('cd "' + _statusData.plugins_dir + '"');
-  showToast('Copied!');
+  showToast(tr('toast.copied'));
 }
 
 function toggleSection(id) {
@@ -538,7 +635,7 @@ function renderHistory(items) {
   if (!container) return;
 
   if (!items || items.length === 0) {
-    container.innerHTML = '<p class="empty-state">No commands yet</p>';
+    container.innerHTML = '<p class="empty-state">' + escapeHtml(tr('No commands yet')) + '</p>';
     return;
   }
 
@@ -577,4 +674,8 @@ function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function openBeginnerGuide() {
+  if (typeof sketchup !== 'undefined' && sketchup.open_beginner_guide) sketchup.open_beginner_guide();
 }

@@ -13,8 +13,17 @@
       <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="#008b8b" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M4.222 21.995v-3.55c0-1.271-.333-1.932-.987-3.037A8.888 8.888 0 0 1 10.889 2a8.89 8.89 0 0 1 8.889 8.887c0 .58 0 .87.024 1.032c.058.388.24.722.417 1.068L22 16.441l-1.4.7c-.405.202-.608.303-.749.49s-.181.399-.26.82l-.008.042c-.183.968-.384 2.036-.95 2.71c-.2.237-.448.43-.727.567c-.461.225-1.028.225-2.162.225c-.525 0-1.051.012-1.576 0c-1.243-.031-2.168-1.077-2.168-2.29"/><path d="M14.388 10.532c-.426 0-.815-.162-1.11-.427m1.11.426c0 1.146-.664 2.235-1.942 2.235S10.504 13.854 10.504 15m3.884-4.469c2.15 0 2.15-3.35 0-3.35q-.294.001-.557.095c.105-2.498-3.496-3.176-4.312-.836m.985 1.857c0-.774-.39-1.456-.985-1.857m0 0c-1.852-1.25-4.32.993-3.146 2.993c-1.97.295-1.76 3.333.247 3.333a1.66 1.66 0 0 0 1.362-.712"/></g></svg>
       <h1>VBO SkAgent</h1>
     </div>
-    <span class="version" id="version">v1.0.0</span>
+    <div class="header-actions">
+      <label for="language-select">Language</label>
+      <select id="language-select" aria-label="Language" onchange="onLanguageChange()">
+        <option value="auto">Follow SketchUp</option>
+        <option value="zh-CN">简体中文</option>
+        <option value="en">English</option>
+      </select>
+      <span class="version" id="version">v1.0.0</span>
+    </div>
   </header>
+  <p class="language-notice" id="language-notice" hidden></p>
 
   <!-- Status + Toolbar -->
   <section class="card status-card">
@@ -45,7 +54,7 @@
     <div class="warning-banner" id="multi-warning" style="display:none;">
       <strong>⚠️  Multi-instance detected</strong>
       <p id="multi-warning-text"></p>
-      <p class="warning-hint">Để agent kết nối instance này, copy command bên dưới rồi dán vào terminal:</p>
+      <p class="warning-hint">To connect your agent to this instance, copy the command below into your terminal:</p>
       <div class="code-block" id="mcp-cmd-multi">—</div>
       <button class="btn-copy-code" onclick="copyMcpCommand()">Copy command</button>
     </div>
@@ -124,7 +133,7 @@
       </div>
       <div class="mcp-config-row">
         <label class="mcp-cfg-label">Preferred port:</label>
-        <input type="number" id="mcp-port-input" min="1024" max="65535" value="7891" />
+        <input type="number" id="mcp-port-input" min="1024" max="65535" value="7891" oninput="onMcpPortInput()" />
         <button class="btn btn-secondary" onclick="onMcpPortApply()">Apply &amp; Restart</button>
       </div>
 
@@ -140,10 +149,10 @@
         <p>Run this command once in your terminal (after MCP server is running):</p>
         <div class="code-block" id="cmd-claude">claude mcp add --transport http vbo-sketchup http://127.0.0.1:7891/mcp</div>
         <button class="btn-copy-code" onclick="copyIdeCmd('claude')">Copy command</button>
-        <p class="prompt-note">Claude Code will discover 4 tools: <code>execute_ruby</code>, <code>reload_file</code>, <code>list_instances</code>, <code>get_console_output</code>.</p>
+        <p class="prompt-note" data-i18n-html-key="mcp.tools_summary">Claude Code will discover 4 tools: <code>execute_ruby</code>, <code>reload_file</code>, <code>list_instances</code>, <code>get_console_output</code>.</p>
       </div>
       <div class="ide-pane" id="ide-pane-cursor" style="display:none;">
-        <p>Add this to <code>.cursor/mcp.json</code> (or global <code>~/.cursor/mcp.json</code>):</p>
+        <p data-i18n-html-key="mcp.cursor_note">Add this to <code>.cursor/mcp.json</code> (or global <code>~/.cursor/mcp.json</code>):</p>
         <div class="code-block" id="cmd-cursor">{
   "mcpServers": {
     "vbo-sketchup": {
@@ -155,7 +164,7 @@
       </div>
       <div class="ide-pane" id="ide-pane-gemini" style="display:none;">
         <p>Gemini / Antigravity does not yet support MCP HTTP natively. Use file-based bridge or contact Google for MCP support.</p>
-        <p class="prompt-note">For now, set <strong>Transport mode = File-based only</strong> above and use <code>GEMINI.md</code> template.</p>
+        <p class="prompt-note" data-i18n-html-key="mcp.gemini_note">For now, set <strong>Transport mode = File-based only</strong> above and use <code>GEMINI.md</code> template.</p>
       </div>
       <div class="ide-pane" id="ide-pane-generic" style="display:none;">
         <p>If your IDE supports MCP HTTP transport, point it to:</p>
@@ -183,7 +192,7 @@
       </div>
       <div class="practice">
         <h3>2. Develop your plugin normally</h3>
-        <p>Create your plugin files in the Plugins folder. Edit code with your AI assistant as usual.
+        <p data-i18n-html-key="practice.bridge_description">Create your plugin files in the Plugins folder. Edit code with your AI assistant as usual.
            The bridge is <em>not</em> where you write your plugin — it's for <strong>running and testing</strong> it.</p>
       </div>
       <div class="practice">
@@ -227,7 +236,7 @@
       <span class="setup-arrow" id="arrow-sec-assistant">&#9654;</span> Beyond Coding — Your AI Assistant
     </h3>
     <div class="collapse-content" id="sec-assistant" style="display:none;">
-      <p class="section-desc">SkAgent isn't just for plugin development. AI becomes a powerful assistant that can <em>act</em> on your model directly:</p>
+      <p class="section-desc" data-i18n-html-key="assistant.intro">SkAgent isn't just for plugin development. AI becomes a powerful assistant that can <em>act</em> on your model directly:</p>
       <div class="usecase">
         <h3>Generate reports</h3>
         <div class="prompt-example"><span class="prompt-label">Prompt</span>
@@ -272,7 +281,7 @@
         <div class="guide-step"><span class="step-num">4</span> Add dialogs, toolbars, and polish</div>
         <div class="guide-step"><span class="step-num">5</span> Package as .rbz and distribute</div>
       </div>
-      <button class="btn btn-secondary" onclick="openTemplates()">Open Full Beginner Guide</button>
+      <button class="btn btn-secondary" onclick="openBeginnerGuide()">Open Full Beginner Guide</button>
     </div>
   </section>
 
@@ -343,8 +352,8 @@
       </div>
     </div>
     <p class="about-desc">
-      <strong>VBO SkAgent</strong> is a free, open-source bridge that connects AI coding assistants
-      to SketchUp's Ruby environment. Built with love at VBO Solution.
+      <strong>VBO SkAgent</strong><span data-i18n-key="about.description"> is a free, open-source bridge that connects AI coding assistants
+      to SketchUp's Ruby environment. Built with love at VBO Solution.</span>
     </p>
     <div class="about-links">
       <a href="https://kcdallc.com/shop" target="_blank">Store</a>

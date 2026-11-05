@@ -1,4 +1,5 @@
 Sketchup.require File.join(File.dirname(__FILE__), 'config')
+Sketchup.require File.join(File.dirname(__FILE__), 'localization')
 Sketchup.require File.join(File.dirname(__FILE__), 'bridge')
 Sketchup.require File.join(File.dirname(__FILE__), 'skills_loader')
 Sketchup.require File.join(File.dirname(__FILE__), 'mcp', 'server')
@@ -6,19 +7,20 @@ Sketchup.require File.join(File.dirname(__FILE__), 'mcp', 'server')
 module VBO::SkAgent
   file = __FILE__
   unless file_loaded?(file)
+    Localization.capture_menu_locale
 
     # --- Menu ---
     menu = UI.menu('Extensions').add_submenu('VBO SkAgent')
-    menu.add_item('Toggle Bridge (File-based)') { Bridge.toggle }
-    cmd_mcp_menu = menu.add_item('Toggle MCP Server') {
+    menu.add_item(Localization.t('menu.bridge')) { Bridge.toggle }
+    cmd_mcp_menu = menu.add_item(Localization.t('menu.mcp')) {
       McpServer.running ? McpServer.stop : McpServer.start
     }
     menu.set_validation_proc(cmd_mcp_menu) {
       McpServer.running ? MF_CHECKED : MF_UNCHECKED
     }
-    menu.add_item('Dashboard') { Dashboard.toggle }
+    menu.add_item(Localization.t('menu.dashboard')) { Dashboard.toggle }
     menu.add_separator
-    cmd_safety = menu.add_item('Safety Mode') {
+    cmd_safety = menu.add_item(Localization.t('menu.safety')) {
       current = Config.get('safety_mode')
       Config.set('safety_mode', !current)
     }
@@ -30,11 +32,10 @@ module VBO::SkAgent
     tb = UI::Toolbar.new('VBO SkAgent')
     icons = File.join(__dir__, 'icons')
 
-    cmd_toggle = UI::Command.new('Toggle Bridge') { Bridge.toggle }
+    cmd_toggle = UI::Command.new(Localization.t('menu.bridge')) { Bridge.toggle }
     cmd_toggle.small_icon = File.join(icons, 'bridge.svg')
     cmd_toggle.large_icon = File.join(icons, 'bridge.svg')
-    cmd_toggle.tooltip = 'Toggle File-based Bridge'
-    cmd_toggle.status_bar_text = 'Connect/Disconnect File-based Bridge (always works, ~500ms)'
+    Localization.register_command(cmd_toggle, 'toolbar.bridge')
     cmd_toggle.set_validation_proc {
       Bridge.watching? ? MF_CHECKED : MF_UNCHECKED
     }
@@ -43,23 +44,21 @@ module VBO::SkAgent
     # MCP Server toggle (v1.2.0+) — fast transport, P50 ~13ms
     icon_mcp = File.join(icons, 'mcp.svg')
     icon_mcp = File.join(icons, 'bridge.svg') unless File.exist?(icon_mcp)
-    cmd_mcp = UI::Command.new('Toggle MCP Server') {
+    cmd_mcp = UI::Command.new(Localization.t('menu.mcp')) {
       McpServer.running ? McpServer.stop : McpServer.start
     }
     cmd_mcp.small_icon = icon_mcp
     cmd_mcp.large_icon = icon_mcp
-    cmd_mcp.tooltip = 'Toggle MCP Server'
-    cmd_mcp.status_bar_text = 'Start/Stop MCP HTTP server on port 7891 (fast transport for Claude Code, Cursor)'
+    Localization.register_command(cmd_mcp, 'toolbar.mcp')
     cmd_mcp.set_validation_proc {
       McpServer.running ? MF_CHECKED : MF_UNCHECKED
     }
     tb.add_item(cmd_mcp)
 
-    cmd_dash = UI::Command.new('Dashboard') { Dashboard.toggle }
+    cmd_dash = UI::Command.new(Localization.t('menu.dashboard')) { Dashboard.toggle }
     cmd_dash.small_icon = File.join(icons, 'dashboard.svg')
     cmd_dash.large_icon = File.join(icons, 'dashboard.svg')
-    cmd_dash.tooltip = 'SkAgent Dashboard'
-    cmd_dash.status_bar_text = 'View bridge status, paths, and command history'
+    Localization.register_command(cmd_dash, 'toolbar.dashboard')
     tb.add_item(cmd_dash)
 
     UI.start_timer(0.1, false) { tb.restore }
@@ -113,6 +112,15 @@ module VBO::SkAgent
       @dialog.set_file(html_path)
 
       # --- Callbacks ---
+      @dialog.add_action_callback('get_localization') {|_ctx|
+        @dialog.execute_script("updateLocalization(#{Localization.payload.to_json})")
+      }
+
+      @dialog.add_action_callback('set_language') {|_ctx, language|
+        next unless Localization.set_language(language)
+        @dialog.execute_script("updateLocalization(#{Localization.payload.to_json})")
+      }
+
       @dialog.add_action_callback('get_status') {|_ctx|
         json = Bridge.status_info.to_json
         @dialog.execute_script("updateStatus(#{json})")
@@ -179,6 +187,11 @@ module VBO::SkAgent
       @dialog.add_action_callback('open_templates') {|_ctx|
         templates_dir = File.join(__dir__, 'templates')
         UI.openURL("file:///#{templates_dir.tr('\\', '/')}")
+      }
+
+      @dialog.add_action_callback('open_beginner_guide') {|_ctx|
+        path = Localization.beginner_guide_path.tr('\\', '/')
+        UI.openURL("file:///#{URI::DEFAULT_PARSER.escape(path)}")
       }
 
       @dialog.add_action_callback('open_plugins_folder') {|_ctx|

@@ -138,13 +138,13 @@ module VBO
         snippet += "\n..." if code.lines.length > 8
 
         result = UI.messagebox(
-          "AI Agent wants to run code:\n\n#{snippet}\n\nAllow?",
+          Localization.t('safety.allow', snippet: snippet),
           MB_YESNO
         )
 
         if result == IDYES
           trust = UI.messagebox(
-            "Trust this session?\n(Won't ask again until bridge is toggled off)",
+            Localization.t('safety.trust'),
             MB_YESNO
           )
           Config.trust_session! if trust == IDYES
@@ -247,7 +247,7 @@ module VBO
         s = VBO::SkAgent::McpServer.status
         s[:available] = true
         s[:fallback_warning] = (s[:running] && !s[:using_preferred]) ?
-          "Port #{s[:preferred_port]} đang bị instance khác chiếm — đang chạy ephemeral #{s[:port]}." : nil
+          Localization.t('mcp.fallback_warning', preferred: s[:preferred_port], port: s[:port]) : nil
         s
       rescue => e
         { available: false, error: e.message }

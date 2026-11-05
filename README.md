@@ -31,14 +31,15 @@ Copy `vbo_sk_agent.rb` and `vbo_sk_agent/` folder into your SketchUp Plugins dir
 
 1. **Toggle Bridge** — Click the SkAgent button in the toolbar (or `Extensions` → `VBO SkAgent` → `Toggle Bridge`)
 2. **Open Dashboard** — `Extensions` → `VBO SkAgent` → `Dashboard`
-3. **Select your AI tool** from the dropdown (Claude Code, Cursor, Antigravity, Windsurf, Copilot, Aider, etc.)
-4. **Follow the steps** shown for your tool — the dashboard generates a **setup prompt** tailored to your agent
-5. **Copy & paste the setup prompt** into your AI — it will automatically:
+3. **Choose a dashboard language** — Follow SketchUp, Simplified Chinese, or English. Menu labels update after restarting SketchUp.
+4. **Select your AI tool** from the dropdown (Claude Code, Cursor, Antigravity, Windsurf, Copilot, Aider, etc.)
+5. **Follow the steps** shown for your tool — the dashboard generates a **setup prompt** tailored to your agent
+6. **Copy & paste the setup prompt** into your AI — it will automatically:
    - Ask your preferred language
    - Create the config file for your AI tool
    - Translate the beginner guide
    - Send a test command to verify the connection
-6. **Start coding!** — Your AI writes to `command.rb`, SkAgent runs it automatically
+7. **Start coding!** — Your AI writes to `command.rb`, SkAgent runs it automatically
 
 ### Supported AI Tools
 
@@ -79,6 +80,7 @@ Anything you can do in SketchUp's Ruby Console, your AI can do for you — just 
 - **Safety mode** — Confirm before running AI-generated code (on by default)
 - **Session trust** — Trust once, run freely until bridge is toggled off
 - **Dashboard** — Status, paths, command history, IDE setup tabs (Claude Code / Cursor / Gemini / Other)
+- **Dashboard languages** — English and Simplified Chinese; follows the SketchUp language by default, with manual selection
 - **Multi-language** — Setup prompt auto-translates to your preferred language
 - **10+ AI tools supported** — Claude Code, Cursor, Antigravity, Windsurf, Copilot, and more
 - **Envelope protocol** — Optional structured commands with ID tracking
